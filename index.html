@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>滑雪之旅 Ski Trip</title>
+    <title>滑雪之旅 Ski Trip (Draft 2 - 自動存檔版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -18,53 +18,45 @@
 
     <div id="app" class="w-full max-w-md h-full bg-slate-50 shadow-2xl relative flex flex-col">
         
-        <header class="bg-sky-600 text-white p-4 pt-12 pb-6 rounded-b-3xl shadow-lg z-10 shrink-0">
+        <header class="bg-sky-600 text-white p-4 pt-12 pb-6 rounded-b-3xl shadow-lg z-10 shrink-0 relative">
             <input 
                 v-model="tripTitle" 
                 class="bg-transparent border-b border-sky-400 text-2xl font-bold tracking-wide w-full outline-none placeholder-sky-200 focus:border-white transition"
             >
-            
-            <div class="flex items-center mt-2 text-sky-100 text-sm">
-                <span class="mr-2">出發日:</span>
-                <input 
-                    type="date" 
-                    v-model="startDate" 
-                    class="bg-sky-700/50 rounded px-2 py-1 text-white outline-none border border-sky-500"
-                >
+            <div class="flex justify-between items-end mt-2">
+                <div class="flex items-center text-sky-100 text-sm">
+                    <span class="mr-2">出發日:</span>
+                    <input type="date" v-model="startDate" class="bg-sky-700/50 rounded px-2 py-1 text-white outline-none border border-sky-500">
+                </div>
+                <button @click="resetData" class="text-xs text-sky-200 border border-sky-400 px-2 py-1 rounded hover:bg-sky-500">
+                    重置所有資料
+                </button>
             </div>
         </header>
 
         <main class="flex-1 overflow-y-auto p-4 pb-24 hide-scrollbar">
             
             <div v-if="currentTab === 'schedule'" class="space-y-4">
-                
                 <div class="flex space-x-2 overflow-x-auto pb-2 hide-scrollbar">
                     <button 
-                        v-for="(day, index) in days" 
-                        :key="index"
-                        @click="activeDayIndex = index"
+                        v-for="(day, index) in days" :key="index" @click="activeDayIndex = index"
                         :class="activeDayIndex === index ? 'bg-sky-500 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'"
-                        class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex flex-col items-center"
-                    >
+                        class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex flex-col items-center">
                         <span>Day {{ index + 1 }}</span>
                         <span class="text-[10px] opacity-80">{{ getDisplayDate(index) }}</span>
                     </button>
-                    <button @click="addDay" class="px-3 py-2 rounded-full bg-slate-200 text-slate-400 text-sm hover:bg-slate-300">
-                        +
-                    </button>
+                    <button @click="addDay" class="px-3 py-2 rounded-full bg-slate-200 text-slate-400 text-sm hover:bg-slate-300">+</button>
                 </div>
 
                 <div class="space-y-3">
                     <div v-if="currentDayEvents.length === 0" class="text-center py-10 text-slate-400">
                         <p>還沒有行程，按右下角新增！</p>
                     </div>
-
                     <div v-for="(event, index) in currentDayEvents" :key="event.id" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 relative">
                         <div class="flex flex-col items-center">
                             <div class="text-xs font-bold text-sky-600">{{ event.time }}</div>
                             <div class="h-full w-0.5 bg-slate-100 mt-1 rounded-full"></div>
                         </div>
-                        
                         <div class="flex-1">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-bold text-slate-800 text-lg">{{ event.location }}</h3>
@@ -73,11 +65,7 @@
                                 </button>
                             </div>
                             <p class="text-sm text-slate-500 mt-1">{{ event.note }}</p>
-                            
-                            <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(event.location)" 
-                               target="_blank"
-                               class="inline-flex items-center mt-3 text-xs font-medium text-sky-500 bg-sky-50 px-2 py-1 rounded-lg hover:bg-sky-100 transition">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(event.location)" target="_blank" class="inline-flex items-center mt-3 text-xs font-medium text-sky-500 bg-sky-50 px-2 py-1 rounded-lg hover:bg-sky-100 transition">
                                 導航 / 地圖
                             </a>
                         </div>
@@ -86,15 +74,12 @@
             </div>
 
             <div v-if="currentTab === 'money'" class="space-y-6">
-                
                 <div class="bg-gradient-to-r from-sky-500 to-blue-500 rounded-2xl p-5 text-white shadow-lg">
                     <p class="text-sky-100 text-sm">旅途總花費</p>
                     <div class="text-3xl font-bold mt-1">¥ {{ totalExpense.toLocaleString() }}</div>
                     <div class="mt-4 flex justify-between items-end">
                         <div class="text-xs text-sky-100 bg-white/20 px-2 py-1 rounded">平均一人: ¥ {{ Math.round(averageExpense).toLocaleString() }}</div>
-                        <button @click="showSettle = !showSettle" class="text-xs bg-white text-sky-600 px-3 py-1.5 rounded-full font-bold shadow">
-                            {{ showSettle ? '隱藏結算' : '查看結算' }}
-                        </button>
+                        <button @click="showSettle = !showSettle" class="text-xs bg-white text-sky-600 px-3 py-1.5 rounded-full font-bold shadow">{{ showSettle ? '隱藏結算' : '查看結算' }}</button>
                     </div>
                 </div>
 
@@ -125,29 +110,16 @@
                     </div>
                 </div>
             </div>
-
         </main>
 
-        <button 
-            @click="openModal" 
-            class="absolute bottom-24 right-6 w-14 h-14 bg-sky-600 text-white rounded-full shadow-xl flex items-center justify-center text-3xl hover:bg-sky-700 transition transform active:scale-95 z-20">
-            +
-        </button>
+        <button @click="openModal" class="absolute bottom-24 right-6 w-14 h-14 bg-sky-600 text-white rounded-full shadow-xl flex items-center justify-center text-3xl hover:bg-sky-700 transition transform active:scale-95 z-20">+</button>
 
         <nav class="bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center shrink-0 safe-area-pb z-20">
-            <button 
-                @click="currentTab = 'schedule'" 
-                class="flex flex-col items-center space-y-1 w-1/2"
-                :class="currentTab === 'schedule' ? 'text-sky-600' : 'text-slate-400'"
-            >
+            <button @click="currentTab = 'schedule'" class="flex flex-col items-center space-y-1 w-1/2" :class="currentTab === 'schedule' ? 'text-sky-600' : 'text-slate-400'">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span class="text-xs font-medium">行程表</span>
             </button>
-            <button 
-                @click="currentTab = 'money'" 
-                class="flex flex-col items-center space-y-1 w-1/2"
-                :class="currentTab === 'money' ? 'text-blue-600' : 'text-slate-400'"
-            >
+            <button @click="currentTab = 'money'" class="flex flex-col items-center space-y-1 w-1/2" :class="currentTab === 'money' ? 'text-blue-600' : 'text-slate-400'">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <span class="text-xs font-medium">分帳</span>
             </button>
@@ -155,105 +127,100 @@
 
         <div v-if="isModalOpen" class="absolute inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
             <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
-                <h3 class="text-xl font-bold text-slate-800 mb-4">
-                    {{ currentTab === 'schedule' ? '新增行程' : '新增支出' }}
-                </h3>
+                <h3 class="text-xl font-bold text-slate-800 mb-4">{{ currentTab === 'schedule' ? '新增行程' : '新增支出' }}</h3>
 
                 <div v-if="currentTab === 'schedule'" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">時間</label>
-                        <input v-model="newEvent.time" type="time" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">地點 (自動產生導航)</label>
-                        <input v-model="newEvent.location" type="text" placeholder="例：滑雪場" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">備註</label>
-                        <input v-model="newEvent.note" type="text" placeholder="例：記得租雪具" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 transition">
-                    </div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">時間</label><input v-model="newEvent.time" type="time" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 transition"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">地點</label><input v-model="newEvent.location" type="text" placeholder="例：滑雪場" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 transition"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">備註</label><input v-model="newEvent.note" type="text" placeholder="例：記得租雪具" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 transition"></div>
                 </div>
 
                 <div v-if="currentTab === 'money'" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">項目</label>
-                        <input v-model="newExpense.item" type="text" placeholder="例：纜車票" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">金額 (日幣)</label>
-                        <input v-model.number="newExpense.amount" type="number" placeholder="1000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-blue-500 transition">
-                    </div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">項目</label><input v-model="newExpense.item" type="text" placeholder="例：纜車票" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-blue-500 transition"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">金額 (日幣)</label><input v-model.number="newExpense.amount" type="number" placeholder="1000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-blue-500 transition"></div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">誰先付的？</label>
                         <div class="flex gap-2">
-                            <button 
-                                v-for="person in travelers" 
-                                :key="person"
-                                @click="newExpense.payer = person"
-                                :class="newExpense.payer === person ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-500 border-slate-200'"
-                                class="flex-1 py-2 rounded-lg border text-sm font-medium transition"
-                            >
-                                {{ person }}
-                            </button>
+                            <button v-for="person in travelers" :key="person" @click="newExpense.payer = person" :class="newExpense.payer === person ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-500 border-slate-200'" class="flex-1 py-2 rounded-lg border text-sm font-medium transition">{{ person }}</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="flex gap-3 mt-6 pb-2">
                     <button @click="isModalOpen = false" class="flex-1 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl transition">取消</button>
-                    <button 
-                        @click="confirmAdd" 
-                        :class="currentTab === 'schedule' ? 'bg-sky-600 hover:bg-sky-700' : 'bg-blue-500 hover:bg-blue-600'"
-                        class="flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition"
-                    >
-                        確認
-                    </button>
+                    <button @click="confirmAdd" :class="currentTab === 'schedule' ? 'bg-sky-600 hover:bg-sky-700' : 'bg-blue-500 hover:bg-blue-600'" class="flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition">確認</button>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
-        const { createApp, ref, computed, reactive } = Vue;
+        const { createApp, ref, computed, reactive, watch, onMounted } = Vue;
 
         createApp({
             setup() {
-                // --- 1. 標題可編輯 ---
-                const tripTitle = ref('日本滑雪之旅');
-                
-                // --- 3. 日期功能 ---
-                // 取得今天日期 YYYY-MM-DD
-                const todayStr = new Date().toISOString().split('T')[0];
-                const startDate = ref(todayStr);
+                // --- 初始化預設資料 ---
+                const defaultDays = [{ events: [] }, { events: [] }, { events: [] }];
+                const defaultExpenses = [];
+                const defaultTitle = '日本滑雪之旅';
+                const defaultDate = new Date().toISOString().split('T')[0];
 
+                const tripTitle = ref(defaultTitle);
+                const startDate = ref(defaultDate);
                 const currentTab = ref('schedule');
                 const isModalOpen = ref(false);
                 const activeDayIndex = ref(0);
                 const showSettle = ref(false);
-
                 const travelers = reactive(['我', '朋友']);
 
-                const days = reactive([
-                    { 
-                        events: [
-                            { id: 1, time: '10:00', location: '成田機場', note: '領取西瓜卡 & WiFi' },
-                            { id: 2, time: '13:00', location: '上野站', note: '搭新幹線' },
-                        ]
-                    },
-                    { events: [] }, 
-                    { events: [] } 
-                ]);
+                const days = reactive(JSON.parse(JSON.stringify(defaultDays)));
+                const expenses = reactive(JSON.parse(JSON.stringify(defaultExpenses)));
 
+                // --- 核心：從 LocalStorage 讀取資料 ---
+                onMounted(() => {
+                    const savedData = localStorage.getItem('skiTripData_v1');
+                    if (savedData) {
+                        try {
+                            const parsed = JSON.parse(savedData);
+                            tripTitle.value = parsed.tripTitle || defaultTitle;
+                            startDate.value = parsed.startDate || defaultDate;
+                            
+                            // 清空並載入 saved days
+                            days.splice(0, days.length, ...parsed.days);
+                            // 清空並載入 saved expenses
+                            expenses.splice(0, expenses.length, ...parsed.expenses);
+                        } catch (e) {
+                            console.error('讀取失敗', e);
+                        }
+                    }
+                });
+
+                // --- 核心：自動存檔 (監聽變動) ---
+                watch([tripTitle, startDate, days, expenses], () => {
+                    const dataToSave = {
+                        tripTitle: tripTitle.value,
+                        startDate: startDate.value,
+                        days: days,
+                        expenses: expenses
+                    };
+                    localStorage.setItem('skiTripData_v1', JSON.stringify(dataToSave));
+                }, { deep: true });
+
+                // --- 重置功能 ---
+                const resetData = () => {
+                    if(confirm('確定要清空所有資料並重置嗎？無法復原喔！')) {
+                        localStorage.removeItem('skiTripData_v1');
+                        location.reload(); // 重新整理頁面
+                    }
+                };
+
+                // --- 原本的邏輯 ---
                 const newEvent = reactive({ time: '', location: '', note: '' });
-
-                const expenses = reactive([
-                    { item: '機票預付', amount: 50000, payer: '我' },
-                    { item: '第一天午餐', amount: 3000, payer: '朋友' }
-                ]);
                 const newExpense = reactive({ item: '', amount: '', payer: '我' });
 
                 const currentDayEvents = computed(() => {
+                    // 避免 index 超出範圍
+                    if (!days[activeDayIndex.value]) return [];
                     return days[activeDayIndex.value].events.sort((a, b) => a.time.localeCompare(b.time));
                 });
 
@@ -263,62 +230,45 @@
                 const settlements = computed(() => {
                     let balance = {};
                     travelers.forEach(p => balance[p] = 0);
-                    expenses.forEach(e => {
-                        balance[e.payer] += e.amount;
-                    });
+                    expenses.forEach(e => balance[e.payer] += e.amount);
 
                     let debts = [];
                     travelers.forEach(p => {
                         let diff = balance[p] - averageExpense.value;
-                        if (diff !== 0) debts.push({ person: p, amount: diff });
+                        if (Math.abs(diff) > 1) debts.push({ person: p, amount: diff });
                     });
 
                     let results = [];
                     debts.sort((a, b) => a.amount - b.amount);
-
-                    let i = 0; 
-                    let j = debts.length - 1;
+                    let i = 0; let j = debts.length - 1;
 
                     while (i < j) {
                         let debtor = debts[i];
                         let creditor = debts[j];
-                        
                         let amount = Math.min(Math.abs(debtor.amount), creditor.amount);
-                        
                         if (amount > 1) { 
-                            results.push({
-                                from: debtor.person,
-                                to: creditor.person,
-                                amount: Math.round(amount)
-                            });
+                            results.push({ from: debtor.person, to: creditor.person, amount: Math.round(amount) });
                         }
-                        
                         debtor.amount += amount;
                         creditor.amount -= amount;
-
                         if (Math.abs(debtor.amount) < 1) i++;
                         if (creditor.amount < 1) j--;
                     }
                     return results;
                 });
 
-                // --- 3. 計算日期顯示 ---
                 const getDisplayDate = (index) => {
                     if(!startDate.value) return '';
                     const d = new Date(startDate.value);
                     d.setDate(d.getDate() + index);
-                    // 格式化為 MM/DD
                     return (d.getMonth() + 1) + '/' + d.getDate();
                 };
 
                 const openModal = () => {
                     if (currentTab.value === 'schedule') {
-                        newEvent.time = '09:00';
-                        newEvent.location = '';
-                        newEvent.note = '';
+                        newEvent.time = '09:00'; newEvent.location = ''; newEvent.note = '';
                     } else {
-                        newExpense.item = '';
-                        newExpense.amount = '';
+                        newExpense.item = ''; newExpense.amount = '';
                     }
                     isModalOpen.value = true;
                 };
@@ -326,10 +276,7 @@
                 const confirmAdd = () => {
                     if (currentTab.value === 'schedule') {
                         if (!newEvent.location) return alert('請輸入地點');
-                        days[activeDayIndex.value].events.push({
-                            id: Date.now(),
-                            ...newEvent
-                        });
+                        days[activeDayIndex.value].events.push({ id: Date.now(), ...newEvent });
                     } else {
                         if (!newExpense.item || !newExpense.amount) return alert('請輸入項目與金額');
                         expenses.unshift({ ...newExpense }); 
@@ -337,17 +284,8 @@
                     isModalOpen.value = false;
                 };
 
-                const deleteEvent = (index) => {
-                    if(confirm('確定刪除此行程？')) {
-                        days[activeDayIndex.value].events.splice(index, 1);
-                    }
-                };
-
-                const deleteExpense = (index) => {
-                    if(confirm('確定刪除此紀錄？')) {
-                        expenses.splice(index, 1);
-                    }
-                };
+                const deleteEvent = (index) => { if(confirm('確定刪除此行程？')) days[activeDayIndex.value].events.splice(index, 1); };
+                const deleteExpense = (index) => { if(confirm('確定刪除此紀錄？')) expenses.splice(index, 1); };
                 
                 const addDay = () => {
                     days.push({ events: [] });
@@ -355,7 +293,7 @@
                 };
 
                 return {
-                    tripTitle, startDate, getDisplayDate, // 新增的 return
+                    tripTitle, startDate, getDisplayDate, resetData,
                     currentTab, isModalOpen, activeDayIndex, travelers, days, expenses,
                     newEvent, newExpense, currentDayEvents, totalExpense, averageExpense, settlements, showSettle,
                     openModal, confirmAdd, deleteEvent, deleteExpense, addDay
@@ -364,10 +302,7 @@
         }).mount('#app');
     </script>
     <style>
-        @keyframes slide-up {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-slide-up { animation: slide-up 0.3s ease-out; }
         .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
     </style>
