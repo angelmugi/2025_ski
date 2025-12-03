@@ -3,24 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>北海道之旅 Tokyo Trip</title>
+    <title>滑雪之旅 Ski Trip</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
-        /* 隱藏 Scrollbar 但保持滑動功能 */
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* 雪地氛圍漸層 */
+        .snow-gradient { background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); }
     </style>
 </head>
-<body class="h-screen w-full flex justify-center bg-gray-100 overflow-hidden">
+<body class="h-screen w-full flex justify-center bg-slate-200 overflow-hidden">
 
-    <div id="app" class="w-full max-w-md h-full bg-white shadow-2xl relative flex flex-col">
+    <div id="app" class="w-full max-w-md h-full bg-slate-50 shadow-2xl relative flex flex-col">
         
-        <header class="bg-indigo-600 text-white p-4 pt-12 pb-6 rounded-b-3xl shadow-lg z-10 shrink-0">
-            <h1 class="text-2xl font-bold tracking-wide">🇯🇵 東京之旅</h1>
-            <p class="text-indigo-200 text-sm mt-1">讓我們享受旅程吧！</p>
+        <header class="bg-sky-600 text-white p-4 pt-12 pb-6 rounded-b-3xl shadow-lg z-10 shrink-0 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-sky-500 rounded-full opacity-50 blur-xl"></div>
+            <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-16 h-16 bg-cyan-400 rounded-full opacity-30 blur-lg"></div>
+
+            <div class="relative z-10">
+                <input 
+                    v-model="tripTitle" 
+                    class="bg-transparent border-b border-sky-400/30 focus:border-white text-2xl font-bold tracking-wide w-full outline-none placeholder-sky-200 text-white"
+                    placeholder="點此輸入旅程名稱"
+                >
+                
+                <div class="flex items-center mt-3 text-sky-100 text-sm">
+                    <span class="mr-2">出發日：</span>
+                    <input 
+                        type="date" 
+                        v-model="startDate" 
+                        class="bg-sky-700/50 rounded px-2 py-1 text-white outline-none focus:ring-1 focus:ring-sky-300 border border-sky-500/50"
+                    >
+                </div>
+            </div>
         </header>
 
         <main class="flex-1 overflow-y-auto p-4 pb-24 hide-scrollbar">
@@ -32,39 +50,75 @@
                         v-for="(day, index) in days" 
                         :key="index"
                         @click="activeDayIndex = index"
-                        :class="activeDayIndex === index ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200'"
-                        class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200"
+                        :class="activeDayIndex === index ? 'bg-sky-500 text-white shadow-md ring-2 ring-sky-200' : 'bg-white text-slate-500 border border-slate-200'"
+                        class="px-4 py-2 rounded-2xl text-sm font-medium whitespace-nowrap transition-all duration-200 flex flex-col items-center min-w-[80px]"
                     >
-                        Day {{ index + 1 }}
+                        <span>Day {{ index + 1 }}</span>
+                        <span class="text-[10px] opacity-80 font-light mt-0.5">{{ getDisplayDate(index) }}</span>
                     </button>
-                    <button @click="addDay" class="px-3 py-2 rounded-full bg-gray-100 text-gray-400 text-sm hover:bg-gray-200">
+                    <button @click="addDay" class="px-3 py-2 rounded-2xl bg-slate-200 text-slate-400 text-sm hover:bg-slate-300 transition">
                         +
                     </button>
                 </div>
 
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 snow-gradient">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-sky-800 font-bold text-sm flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                            當地天氣
+                        </h3>
+                        <a 
+                            :href="`https://www.google.com/search?q=weather+${days[activeDayIndex].weatherLocation}`" 
+                            target="_blank"
+                            class="text-xs bg-sky-100 text-sky-600 px-2 py-1 rounded-full hover:bg-sky-200 transition"
+                        >
+                            查天氣 ↗
+                        </a>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-2">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-slate-400 block mb-1">地點</label>
+                            <input 
+                                v-model="days[activeDayIndex].weatherLocation" 
+                                class="w-full bg-white/80 border-none rounded-lg text-sm px-2 py-1.5 text-slate-700 focus:ring-1 focus:ring-sky-300 placeholder-slate-300" 
+                                placeholder="例: 輕井澤"
+                            >
+                        </div>
+                        <div class="w-24">
+                            <label class="text-[10px] text-slate-400 block mb-1">預測/溫度</label>
+                            <input 
+                                v-model="days[activeDayIndex].weatherNote" 
+                                class="w-full bg-white/80 border-none rounded-lg text-sm px-2 py-1.5 text-slate-700 focus:ring-1 focus:ring-sky-300 placeholder-slate-300" 
+                                placeholder="-5°C 雪"
+                            >
+                        </div>
+                    </div>
+                </div>
+
                 <div class="space-y-3">
-                    <div v-if="currentDayEvents.length === 0" class="text-center py-10 text-gray-400">
-                        <p>今天還沒有行程，按右下角新增！</p>
+                    <div v-if="currentDayEvents.length === 0" class="text-center py-10 text-slate-400">
+                        <p class="text-sm">準備去滑雪了嗎？新增行程吧！</p>
                     </div>
 
-                    <div v-for="(event, index) in currentDayEvents" :key="event.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 relative group">
-                        <div class="flex flex-col items-center">
-                            <div class="text-xs font-bold text-indigo-600">{{ event.time }}</div>
-                            <div class="h-full w-0.5 bg-gray-200 mt-1 rounded-full"></div>
+                    <div v-for="(event, index) in currentDayEvents" :key="event.id" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 relative group hover:shadow-md transition">
+                        <div class="flex flex-col items-center pt-1">
+                            <div class="text-xs font-bold text-sky-600 font-mono">{{ event.time }}</div>
+                            <div class="h-full w-0.5 bg-slate-100 mt-1 rounded-full"></div>
                         </div>
                         
                         <div class="flex-1">
                             <div class="flex justify-between items-start">
-                                <h3 class="font-bold text-gray-800 text-lg">{{ event.location }}</h3>
-                                <button @click="deleteEvent(index)" class="text-gray-300 hover:text-red-400">
+                                <h3 class="font-bold text-slate-700 text-base">{{ event.location }}</h3>
+                                <button @click="deleteEvent(index)" class="text-slate-300 hover:text-red-400 transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
-                            <p class="text-sm text-gray-500 mt-1">{{ event.note }}</p>
+                            <p class="text-sm text-slate-500 mt-1">{{ event.note }}</p>
                             
                             <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(event.location)" 
                                target="_blank"
-                               class="inline-flex items-center mt-3 text-xs font-medium text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition">
+                               class="inline-flex items-center mt-3 text-xs font-medium text-sky-500 bg-sky-50 px-3 py-1.5 rounded-lg hover:bg-sky-100 transition border border-sky-100">
                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                 導航 / 地圖
                             </a>
@@ -75,42 +129,48 @@
 
             <div v-if="currentTab === 'money'" class="space-y-6">
                 
-                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-5 text-white shadow-lg">
-                    <p class="text-emerald-100 text-sm">旅途總花費</p>
-                    <div class="text-3xl font-bold mt-1">¥ {{ totalExpense.toLocaleString() }}</div>
-                    <div class="mt-4 flex justify-between items-end">
-                        <div class="text-xs text-emerald-100 bg-white/20 px-2 py-1 rounded">平均一人: ¥ {{ averageExpense.toLocaleString() }}</div>
-                        <button @click="showSettle = !showSettle" class="text-xs bg-white text-emerald-600 px-3 py-1.5 rounded-full font-bold shadow">
+                <div class="bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                    <p class="text-sky-100 text-sm">滑雪團總開銷</p>
+                    <div class="text-3xl font-bold mt-1 tracking-tight">¥ {{ totalExpense.toLocaleString() }}</div>
+                    <div class="mt-4 flex justify-between items-end relative z-10">
+                        <div class="text-xs text-sky-100 bg-black/10 px-2 py-1 rounded">每人平均: ¥ {{ averageExpense.toLocaleString() }}</div>
+                        <button @click="showSettle = !showSettle" class="text-xs bg-white text-sky-600 px-3 py-1.5 rounded-full font-bold shadow hover:bg-sky-50 transition">
                             {{ showSettle ? '隱藏結算' : '查看結算' }}
                         </button>
                     </div>
                 </div>
 
-                <div v-if="showSettle" class="bg-white rounded-xl p-4 border border-emerald-100 shadow-sm animate-fade-in">
-                    <h3 class="text-gray-700 font-bold mb-3 text-sm">結算建議 (誰該給誰)</h3>
+                <div v-if="showSettle" class="bg-white rounded-xl p-4 border border-sky-100 shadow-sm animate-fade-in">
+                    <h3 class="text-slate-700 font-bold mb-3 text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        結算建議 (誰該給誰)
+                    </h3>
                     <div v-if="settlements.length > 0" class="space-y-2">
-                        <div v-for="s in settlements" class="flex justify-between items-center text-sm">
-                            <span class="text-gray-600"><span class="font-bold text-gray-800">{{ s.from }}</span> 給 {{ s.to }}</span>
-                            <span class="font-bold text-emerald-600">¥ {{ s.amount.toLocaleString() }}</span>
+                        <div v-for="s in settlements" class="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
+                            <span class="text-slate-600"><span class="font-bold text-slate-800">{{ s.from }}</span> 給 {{ s.to }}</span>
+                            <span class="font-bold text-sky-600">¥ {{ s.amount.toLocaleString() }}</span>
                         </div>
                     </div>
-                    <div v-else class="text-gray-400 text-xs text-center">目前帳目是平的，或是還沒有資料。</div>
+                    <div v-else class="text-slate-400 text-xs text-center py-2">目前帳目是平的，或是還沒有資料。</div>
                 </div>
 
                 <div>
-                    <h3 class="font-bold text-gray-700 mb-3 ml-1">最近支出</h3>
+                    <h3 class="font-bold text-slate-700 mb-3 ml-1">支出明細</h3>
                     <div class="space-y-3">
-                        <div v-for="(record, index) in expenses" :key="index" class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div v-for="(record, index) in expenses" :key="index" class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group">
                             <div>
-                                <div class="font-bold text-gray-800">{{ record.item }}</div>
-                                <div class="text-xs text-gray-500 mt-0.5">{{ record.payer }} 先付</div>
+                                <div class="font-bold text-slate-800">{{ record.item }}</div>
+                                <div class="text-xs text-slate-500 mt-0.5 flex items-center">
+                                    <span class="bg-slate-100 px-1.5 rounded text-slate-600 mr-1">{{ record.payer }}</span> 先付
+                                </div>
                             </div>
                             <div class="text-right">
-                                <div class="font-bold text-gray-800">¥ {{ record.amount }}</div>
-                                <button @click="deleteExpense(index)" class="text-xs text-red-400 mt-1">刪除</button>
+                                <div class="font-bold text-slate-800">¥ {{ record.amount }}</div>
+                                <button @click="deleteExpense(index)" class="text-xs text-red-300 hover:text-red-500 mt-1 opacity-0 group-hover:opacity-100 transition">刪除</button>
                             </div>
                         </div>
-                        <div v-if="expenses.length === 0" class="text-center py-6 text-gray-400 text-sm">
+                        <div v-if="expenses.length === 0" class="text-center py-6 text-slate-400 text-sm bg-white rounded-xl border border-dashed border-slate-200">
                             還沒有記帳紀錄
                         </div>
                     </div>
@@ -121,67 +181,67 @@
 
         <button 
             @click="openModal" 
-            class="absolute bottom-24 right-6 w-14 h-14 bg-gray-900 text-white rounded-full shadow-xl flex items-center justify-center text-3xl hover:bg-gray-800 transition transform hover:scale-105 active:scale-95 z-20">
+            class="absolute bottom-24 right-6 w-14 h-14 bg-sky-600 text-white rounded-full shadow-xl shadow-sky-600/30 flex items-center justify-center text-3xl hover:bg-sky-500 transition transform hover:scale-105 active:scale-95 z-20 border-2 border-white">
             +
         </button>
 
-        <nav class="bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center shrink-0 safe-area-pb z-20">
+        <nav class="bg-white/90 backdrop-blur border-t border-slate-200 px-6 py-3 flex justify-between items-center shrink-0 safe-area-pb z-20">
             <button 
                 @click="currentTab = 'schedule'" 
-                class="flex flex-col items-center space-y-1 w-1/2"
-                :class="currentTab === 'schedule' ? 'text-indigo-600' : 'text-gray-400'"
+                class="flex flex-col items-center space-y-1 w-1/2 transition"
+                :class="currentTab === 'schedule' ? 'text-sky-600' : 'text-slate-400 hover:text-slate-600'"
             >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <span class="text-xs font-medium">行程表</span>
+                <span class="text-xs font-medium">行程</span>
             </button>
             <button 
                 @click="currentTab = 'money'" 
-                class="flex flex-col items-center space-y-1 w-1/2"
-                :class="currentTab === 'money' ? 'text-emerald-600' : 'text-gray-400'"
+                class="flex flex-col items-center space-y-1 w-1/2 transition"
+                :class="currentTab === 'money' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'"
             >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <span class="text-xs font-medium">分帳</span>
             </button>
         </nav>
 
-        <div v-if="isModalOpen" class="absolute inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
+        <div v-if="isModalOpen" class="absolute inset-0 bg-slate-900/40 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
             <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">
                     {{ currentTab === 'schedule' ? '新增行程' : '新增支出' }}
                 </h3>
 
                 <div v-if="currentTab === 'schedule'" class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">時間</label>
-                        <input v-model="newEvent.time" type="time" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-indigo-500 transition">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">時間</label>
+                        <input v-model="newEvent.time" type="time" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">地點 (自動產生導航)</label>
-                        <input v-model="newEvent.location" type="text" placeholder="例：晴空塔" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-indigo-500 transition">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">地點 (滑雪場/餐廳)</label>
+                        <input v-model="newEvent.location" type="text" placeholder="例：GALA 湯澤滑雪場" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">備註</label>
-                        <input v-model="newEvent.note" type="text" placeholder="例：要在這裡買伴手禮" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-indigo-500 transition">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">備註</label>
+                        <input v-model="newEvent.note" type="text" placeholder="例：記得租雪具" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 transition">
                     </div>
                 </div>
 
                 <div v-if="currentTab === 'money'" class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">項目</label>
-                        <input v-model="newExpense.item" type="text" placeholder="例：拉麵" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-emerald-500 transition">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">項目</label>
+                        <input v-model="newExpense.item" type="text" placeholder="例：纜車票" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">金額 (日幣)</label>
-                        <input v-model.number="newExpense.amount" type="number" placeholder="1000" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-emerald-500 transition">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">金額 (日幣)</label>
+                        <input v-model.number="newExpense.amount" type="number" placeholder="5000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">誰先付的？</label>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">誰先付的？</label>
                         <div class="flex gap-2">
                             <button 
                                 v-for="person in travelers" 
                                 :key="person"
                                 @click="newExpense.payer = person"
-                                :class="newExpense.payer === person ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-gray-500 border-gray-200'"
+                                :class="newExpense.payer === person ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-slate-500 border-slate-200'"
                                 class="flex-1 py-2 rounded-lg border text-sm font-medium transition"
                             >
                                 {{ person }}
@@ -191,13 +251,12 @@
                 </div>
 
                 <div class="flex gap-3 mt-6">
-                    <button @click="isModalOpen = false" class="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-xl transition">取消</button>
+                    <button @click="isModalOpen = false" class="flex-1 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl transition">取消</button>
                     <button 
                         @click="confirmAdd" 
-                        :class="currentTab === 'schedule' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-500 hover:bg-emerald-600'"
-                        class="flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition"
+                        class="flex-1 py-3 text-white font-bold rounded-xl shadow-lg bg-sky-600 hover:bg-sky-700 transition"
                     >
-                        確認新增
+                        確認
                     </button>
                 </div>
             </div>
@@ -206,164 +265,59 @@
     </div>
 
     <script>
-        const { createApp, ref, computed, reactive } = Vue;
+        const { createApp, ref, computed, reactive, watch } = Vue;
 
         createApp({
             setup() {
                 // --- 狀態管理 ---
+                const tripTitle = ref('日本滑雪之旅');
+                // 預設今天為出發日，格式 YYYY-MM-DD
+                const today = new Date().toISOString().split('T')[0];
+                const startDate = ref(today);
+                
                 const currentTab = ref('schedule');
                 const isModalOpen = ref(false);
                 const activeDayIndex = ref(0);
                 const showSettle = ref(false);
 
-                // 設定旅伴 (可在此修改名字)
+                // 設定旅伴
                 const travelers = reactive(['我', '朋友']);
 
-                // --- 行程資料 ---
+                // --- 行程資料 (結構微調，加入天氣欄位) ---
                 const days = reactive([
                     { 
+                        weatherLocation: '東京', weatherNote: '晴 5°C',
                         events: [
-                            { id: 1, time: '10:00', location: '成田機場', note: '領取西瓜卡 & WiFi' },
-                            { id: 2, time: '13:00', location: '淺草雷門', note: '午餐吃鰻魚飯' },
+                            { id: 1, time: '10:00', location: '成田機場', note: '領取 JR Pass' },
+                            { id: 2, time: '14:00', location: '上野站', note: '搭新幹線前往越後湯澤' },
                         ]
                     },
-                    { events: [] }, // Day 2
-                    { events: [] }  // Day 3
+                    { 
+                        weatherLocation: '越後湯澤', weatherNote: '雪 -2°C',
+                        events: [
+                            { id: 3, time: '09:00', location: 'GALA 湯澤', note: '滑雪一整天！' }
+                        ] 
+                    }, 
+                    { weatherLocation: '越後湯澤', weatherNote: '', events: [] }
                 ]);
 
                 const newEvent = reactive({ time: '', location: '', note: '' });
 
                 // --- 記帳資料 ---
                 const expenses = reactive([
-                    { item: '機票預付', amount: 50000, payer: '我' },
-                    { item: '第一天午餐', amount: 3000, payer: '朋友' }
+                    { item: '滑雪纜車票(2人)', amount: 12000, payer: '我' },
+                    { item: '晚餐居酒屋', amount: 8000, payer: '朋友' }
                 ]);
                 const newExpense = reactive({ item: '', amount: '', payer: '我' });
 
                 // --- 計算屬性 ---
+                // 計算顯示日期
+                const getDisplayDate = (index) => {
+                    const start = new Date(startDate.value);
+                    const current = new Date(start);
+                    current.setDate(start.getDate() + index);
+                    return `${current.getMonth() + 1}/${current.getDate()}`;
+                };
+
                 const currentDayEvents = computed(() => {
-                    // 根據時間排序
-                    return days[activeDayIndex.value].events.sort((a, b) => a.time.localeCompare(b.time));
-                });
-
-                const totalExpense = computed(() => expenses.reduce((sum, item) => sum + item.amount, 0));
-                const averageExpense = computed(() => totalExpense.value / travelers.length);
-
-                // 簡單的分帳演算法 (僅適用於 2-3 人簡單均分)
-                const settlements = computed(() => {
-                    let balance = {};
-                    travelers.forEach(p => balance[p] = 0);
-                    
-                    expenses.forEach(e => {
-                        balance[e.payer] += e.amount;
-                    });
-
-                    // 每個人目前付的 - 平均應該付的 = 正數代表多付(要收錢)，負數代表少付(要給錢)
-                    let debts = [];
-                    travelers.forEach(p => {
-                        let diff = balance[p] - averageExpense.value;
-                        if (diff !== 0) debts.push({ person: p, amount: diff });
-                    });
-
-                    // 簡單配對邏輯
-                    let results = [];
-                    debts.sort((a, b) => a.amount - b.amount); // 排序：少付的在前，多付的在後
-
-                    let i = 0; 
-                    let j = debts.length - 1;
-
-                    while (i < j) {
-                        let debtor = debts[i]; // 欠錢的人
-                        let creditor = debts[j]; // 債主
-                        
-                        let amount = Math.min(Math.abs(debtor.amount), creditor.amount);
-                        
-                        if (amount > 1) { // 忽略太小的金額誤差
-                            results.push({
-                                from: debtor.person,
-                                to: creditor.person,
-                                amount: Math.round(amount)
-                            });
-                        }
-                        
-                        debtor.amount += amount;
-                        creditor.amount -= amount;
-
-                        if (Math.abs(debtor.amount) < 1) i++;
-                        if (creditor.amount < 1) j--;
-                    }
-                    return results;
-                });
-
-                // --- 方法 ---
-                const openModal = () => {
-                    // 重置表單
-                    if (currentTab.value === 'schedule') {
-                        newEvent.time = '12:00';
-                        newEvent.location = '';
-                        newEvent.note = '';
-                    } else {
-                        newExpense.item = '';
-                        newExpense.amount = '';
-                    }
-                    isModalOpen.value = true;
-                };
-
-                const confirmAdd = () => {
-                    if (currentTab.value === 'schedule') {
-                        if (!newEvent.location) return alert('請輸入地點');
-                        days[activeDayIndex.value].events.push({
-                            id: Date.now(),
-                            ...newEvent
-                        });
-                    } else {
-                        if (!newExpense.item || !newExpense.amount) return alert('請輸入項目與金額');
-                        expenses.unshift({ ...newExpense }); // 新的在上面
-                    }
-                    isModalOpen.value = false;
-                };
-
-                const deleteEvent = (index) => {
-                    if(confirm('確定刪除此行程？')) {
-                        days[activeDayIndex.value].events.splice(index, 1);
-                    }
-                };
-
-                const deleteExpense = (index) => {
-                    if(confirm('確定刪除此紀錄？')) {
-                        expenses.splice(index, 1);
-                    }
-                };
-                
-                const addDay = () => {
-                    days.push({ events: [] });
-                    activeDayIndex.value = days.length - 1;
-                };
-
-                return {
-                    currentTab, isModalOpen, activeDayIndex, travelers, days, expenses,
-                    newEvent, newExpense, currentDayEvents, totalExpense, averageExpense, settlements, showSettle,
-                    openModal, confirmAdd, deleteEvent, deleteExpense, addDay
-                };
-            }
-        }).mount('#app');
-    </script>
-    <style>
-        /* 簡單的動畫 */
-        @keyframes slide-up {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-slide-up { animation: slide-up 0.3s ease-out; }
-        
-        @keyframes fade-in {
-            from { opacity: 0; height: 0; }
-            to { opacity: 1; height: auto; }
-        }
-        .animate-fade-in { animation: fade-in 0.3s ease-out; }
-        
-        /* 解決 iOS 底部安全區域 */
-        .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
-    </style>
-</body>
-</html>
+                    return days[activeDayIndex.value].events.sort((a, b) => a.time.localeCompare
