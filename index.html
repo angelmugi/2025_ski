@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>滑雪之旅 Ski Trip (Draft 2 - 自動存檔版)</title>
+    <title>滑雪之旅 Ski Trip (Draft 3 - 多人版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -28,8 +28,8 @@
                     <span class="mr-2">出發日:</span>
                     <input type="date" v-model="startDate" class="bg-sky-700/50 rounded px-2 py-1 text-white outline-none border border-sky-500">
                 </div>
-                <button @click="resetData" class="text-xs text-sky-200 border border-sky-400 px-2 py-1 rounded hover:bg-sky-500">
-                    重置所有資料
+                <button @click="isSettingsOpen = true" class="flex items-center text-xs bg-sky-700 text-white px-3 py-1.5 rounded-full hover:bg-sky-800 shadow border border-sky-500 transition">
+                    <span class="mr-1">👥</span> 成員 ({{ travelers.length }})
                 </button>
             </div>
         </header>
@@ -140,8 +140,8 @@
                     <div><label class="block text-xs font-bold text-slate-500 mb-1">金額 (日幣)</label><input v-model.number="newExpense.amount" type="number" placeholder="1000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-blue-500 transition"></div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">誰先付的？</label>
-                        <div class="flex gap-2">
-                            <button v-for="person in travelers" :key="person" @click="newExpense.payer = person" :class="newExpense.payer === person ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-500 border-slate-200'" class="flex-1 py-2 rounded-lg border text-sm font-medium transition">{{ person }}</button>
+                        <div class="flex flex-wrap gap-2">
+                            <button v-for="person in travelers" :key="person" @click="newExpense.payer = person" :class="newExpense.payer === person ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-500 border-slate-200'" class="px-3 py-2 rounded-lg border text-sm font-medium transition">{{ person }}</button>
                         </div>
                     </div>
                 </div>
@@ -152,6 +152,41 @@
                 </div>
             </div>
         </div>
+
+        <div v-if="isSettingsOpen" class="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-slate-800">成員管理</h3>
+                    <button @click="isSettingsOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+                
+                <p class="text-xs text-slate-400 mb-4">點擊名字可修改，修改後所有相關帳目會自動更新。</p>
+
+                <div class="space-y-2 max-h-[50vh] overflow-y-auto mb-4">
+                    <div v-for="(person, index) in travelers" :key="index" class="flex items-center gap-2">
+                        <input 
+                            :value="person" 
+                            @change="updateTravelerName(index, $event.target.value)"
+                            class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 outline-none focus:border-sky-500 transition"
+                        >
+                        <button v-if="travelers.length > 1" @click="removeTraveler(index)" class="text-red-400 hover:text-red-600 p-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <input v-model="newTravelerName" placeholder="輸入新成員名字" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-sky-500">
+                    <button @click="addTraveler" class="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-sky-700">新增</button>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center">
+                    <button @click="resetData" class="text-xs text-red-300 hover:text-red-500">⚠ 重置所有資料</button>
+                    <button @click="isSettingsOpen = false" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold">完成</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -159,78 +194,115 @@
 
         createApp({
             setup() {
-                // --- 初始化預設資料 ---
+                // --- 初始化資料 ---
                 const defaultDays = [{ events: [] }, { events: [] }, { events: [] }];
                 const defaultExpenses = [];
                 const defaultTitle = '日本滑雪之旅';
                 const defaultDate = new Date().toISOString().split('T')[0];
+                const defaultTravelers = ['我', '朋友']; // 預設名單
 
                 const tripTitle = ref(defaultTitle);
                 const startDate = ref(defaultDate);
                 const currentTab = ref('schedule');
                 const isModalOpen = ref(false);
+                const isSettingsOpen = ref(false); // 控制設定視窗
                 const activeDayIndex = ref(0);
                 const showSettle = ref(false);
-                const travelers = reactive(['我', '朋友']);
+                
+                // 改為 reactive 陣列，但為了方便取代，我們在 load 時會操作內容
+                const travelers = reactive([...defaultTravelers]);
+                const newTravelerName = ref('');
 
                 const days = reactive(JSON.parse(JSON.stringify(defaultDays)));
                 const expenses = reactive(JSON.parse(JSON.stringify(defaultExpenses)));
 
-                // --- 核心：從 LocalStorage 讀取資料 ---
+                // --- LocalStorage 讀取 ---
                 onMounted(() => {
-                    const savedData = localStorage.getItem('skiTripData_v1');
+                    const savedData = localStorage.getItem('skiTripData_v2'); // 升級為 v2
                     if (savedData) {
                         try {
                             const parsed = JSON.parse(savedData);
                             tripTitle.value = parsed.tripTitle || defaultTitle;
                             startDate.value = parsed.startDate || defaultDate;
                             
-                            // 清空並載入 saved days
                             days.splice(0, days.length, ...parsed.days);
-                            // 清空並載入 saved expenses
                             expenses.splice(0, expenses.length, ...parsed.expenses);
-                        } catch (e) {
-                            console.error('讀取失敗', e);
-                        }
+                            
+                            // 讀取成員名單
+                            if (parsed.travelers && parsed.travelers.length > 0) {
+                                travelers.splice(0, travelers.length, ...parsed.travelers);
+                            }
+                        } catch (e) { console.error('讀取失敗', e); }
                     }
                 });
 
-                // --- 核心：自動存檔 (監聽變動) ---
-                watch([tripTitle, startDate, days, expenses], () => {
+                // --- 自動存檔 ---
+                watch([tripTitle, startDate, days, expenses, travelers], () => {
                     const dataToSave = {
                         tripTitle: tripTitle.value,
                         startDate: startDate.value,
                         days: days,
-                        expenses: expenses
+                        expenses: expenses,
+                        travelers: travelers
                     };
-                    localStorage.setItem('skiTripData_v1', JSON.stringify(dataToSave));
+                    localStorage.setItem('skiTripData_v2', JSON.stringify(dataToSave));
                 }, { deep: true });
 
-                // --- 重置功能 ---
-                const resetData = () => {
-                    if(confirm('確定要清空所有資料並重置嗎？無法復原喔！')) {
-                        localStorage.removeItem('skiTripData_v1');
-                        location.reload(); // 重新整理頁面
+                // --- 成員管理邏輯 ---
+                const addTraveler = () => {
+                    if (!newTravelerName.value) return;
+                    if (travelers.includes(newTravelerName.value)) return alert('名字重複囉');
+                    travelers.push(newTravelerName.value);
+                    newTravelerName.value = '';
+                };
+
+                const removeTraveler = (index) => {
+                    if (confirm(`確定移除 ${travelers[index]} 嗎？`)) {
+                        travelers.splice(index, 1);
                     }
                 };
 
-                // --- 原本的邏輯 ---
+                const updateTravelerName = (index, newName) => {
+                    if (!newName) return;
+                    const oldName = travelers[index];
+                    travelers[index] = newName;
+                    
+                    // 自動更新相關帳目
+                    expenses.forEach(record => {
+                        if (record.payer === oldName) {
+                            record.payer = newName;
+                        }
+                    });
+                };
+
+                // --- 其他邏輯 ---
+                const resetData = () => {
+                    if(confirm('確定要清空所有資料並重置嗎？無法復原喔！')) {
+                        localStorage.removeItem('skiTripData_v2');
+                        location.reload();
+                    }
+                };
+
                 const newEvent = reactive({ time: '', location: '', note: '' });
-                const newExpense = reactive({ item: '', amount: '', payer: '我' });
+                const newExpense = reactive({ item: '', amount: '', payer: '' }); // payer 預設留空
 
                 const currentDayEvents = computed(() => {
-                    // 避免 index 超出範圍
                     if (!days[activeDayIndex.value]) return [];
                     return days[activeDayIndex.value].events.sort((a, b) => a.time.localeCompare(b.time));
                 });
 
                 const totalExpense = computed(() => expenses.reduce((sum, item) => sum + item.amount, 0));
-                const averageExpense = computed(() => totalExpense.value / travelers.length);
+                const averageExpense = computed(() => travelers.length > 0 ? totalExpense.value / travelers.length : 0);
 
                 const settlements = computed(() => {
                     let balance = {};
                     travelers.forEach(p => balance[p] = 0);
-                    expenses.forEach(e => balance[e.payer] += e.amount);
+                    // 只計算在名單內的人的帳
+                    expenses.forEach(e => {
+                        if (balance.hasOwnProperty(e.payer)) {
+                            balance[e.payer] += e.amount;
+                        }
+                    });
 
                     let debts = [];
                     travelers.forEach(p => {
@@ -240,71 +312,4 @@
 
                     let results = [];
                     debts.sort((a, b) => a.amount - b.amount);
-                    let i = 0; let j = debts.length - 1;
-
-                    while (i < j) {
-                        let debtor = debts[i];
-                        let creditor = debts[j];
-                        let amount = Math.min(Math.abs(debtor.amount), creditor.amount);
-                        if (amount > 1) { 
-                            results.push({ from: debtor.person, to: creditor.person, amount: Math.round(amount) });
-                        }
-                        debtor.amount += amount;
-                        creditor.amount -= amount;
-                        if (Math.abs(debtor.amount) < 1) i++;
-                        if (creditor.amount < 1) j--;
-                    }
-                    return results;
-                });
-
-                const getDisplayDate = (index) => {
-                    if(!startDate.value) return '';
-                    const d = new Date(startDate.value);
-                    d.setDate(d.getDate() + index);
-                    return (d.getMonth() + 1) + '/' + d.getDate();
-                };
-
-                const openModal = () => {
-                    if (currentTab.value === 'schedule') {
-                        newEvent.time = '09:00'; newEvent.location = ''; newEvent.note = '';
-                    } else {
-                        newExpense.item = ''; newExpense.amount = '';
-                    }
-                    isModalOpen.value = true;
-                };
-
-                const confirmAdd = () => {
-                    if (currentTab.value === 'schedule') {
-                        if (!newEvent.location) return alert('請輸入地點');
-                        days[activeDayIndex.value].events.push({ id: Date.now(), ...newEvent });
-                    } else {
-                        if (!newExpense.item || !newExpense.amount) return alert('請輸入項目與金額');
-                        expenses.unshift({ ...newExpense }); 
-                    }
-                    isModalOpen.value = false;
-                };
-
-                const deleteEvent = (index) => { if(confirm('確定刪除此行程？')) days[activeDayIndex.value].events.splice(index, 1); };
-                const deleteExpense = (index) => { if(confirm('確定刪除此紀錄？')) expenses.splice(index, 1); };
-                
-                const addDay = () => {
-                    days.push({ events: [] });
-                    activeDayIndex.value = days.length - 1;
-                };
-
-                return {
-                    tripTitle, startDate, getDisplayDate, resetData,
-                    currentTab, isModalOpen, activeDayIndex, travelers, days, expenses,
-                    newEvent, newExpense, currentDayEvents, totalExpense, averageExpense, settlements, showSettle,
-                    openModal, confirmAdd, deleteEvent, deleteExpense, addDay
-                };
-            }
-        }).mount('#app');
-    </script>
-    <style>
-        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-slide-up { animation: slide-up 0.3s ease-out; }
-        .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
-    </style>
-</body>
-</html>
+      
