@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>麗星郵輪 五天四夜假期</title>
   <style>
-    /* 全局與重置設定 */
     :root { --primary-color: #0284c7; --bg-color: #f8fafc; --card-bg: #ffffff; --text-main: #334155; --text-muted: #64748b; --border-color: #e2e8f0; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
     body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 80px; }
@@ -28,8 +27,8 @@
     .checklist-item { display: flex; align-items: center; background: var(--card-bg); padding: 14px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color); }
     .checklist-item input { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--primary-color); }
     .weather-temp { font-size: 24px; color: var(--primary-color); font-weight: bold; margin: 8px 0; }
-    .map-container { width: 100%; border-radius: 12px; overflow: hidden; }
-    iframe { width: 100%; height: 350px; border: none; }
+    .map-container { width: 100%; border-radius: 12px; overflow: hidden; background: #e2e8f0; }
+    iframe { width: 100%; height: 350px; border: none; display: block; }
     .loading { text-align: center; color: var(--text-muted); padding: 20px; font-size: 14px; }
   </style>
 </head>
@@ -70,18 +69,13 @@
   </nav>
 
   <script>
-    // ==========================================
-    // 💡 你的 Google 試算表 ID 已經設定好了！
-    // ==========================================
     const SHEET_ID = '1SoJwHoJQz4pkMRCiwGSRc46bNgkYM-12kfTv4kVJZlg'; 
     
-    // 透過 Google Visualization API 抓取試算表資料
     async function fetchSheet(sheetName) {
       const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
       try {
         const res = await fetch(url);
         const text = await res.text();
-        // 移除 Google API 回傳的多餘字串，轉成純 JSON
         const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
         const data = JSON.parse(jsonStr);
         return data.table.rows.map(row => row.c.map(cell => cell ? cell.v : ''));
@@ -91,7 +85,6 @@
       }
     }
 
-    // 初始化所有資料
     async function loadAllData() {
       // 1. 載入行程
       const itineraryData = await fetchSheet('行程表');
@@ -100,17 +93,13 @@
         timeline.innerHTML = '';
         let currentDay = '';
         let dayHtml = '';
-        
         itineraryData.forEach(row => {
           const day = row[0];
           const time = row[1] || '';
           const desc = row[2] || '';
-          
-          // 跳過標題列 (如果有的話)
           if (day === '天數') return;
-
           if(day && day !== currentDay) {
-            if(dayHtml !== '') dayHtml += `</div>`; // 關閉上一個卡片
+            if(dayHtml !== '') dayHtml += `</div>`; 
             currentDay = day;
             dayHtml += `<div class="card"><div class="day-title">${day}</div>`;
           }
@@ -118,8 +107,6 @@
         });
         if(dayHtml !== '') dayHtml += `</div>`;
         timeline.innerHTML = dayHtml || '<div class="loading">目前沒有行程資料</div>';
-      } else {
-        timeline.innerHTML = '<div class="loading">無法載入行程，請檢查試算表權限或名稱是否正確。</div>';
       }
 
       // 2. 載入天氣
@@ -127,7 +114,7 @@
       const weatherContainer = document.getElementById('weather-container');
       if (weatherData.length > 0) {
         weatherContainer.innerHTML = weatherData.map(row => {
-          if (row[0] === '日期') return ''; // 跳過標題列
+          if (row[0] === '日期') return '';
           return `
           <div class="card" style="text-align:center;">
             <div style="font-weight:bold;">${row[0]}</div>
@@ -135,8 +122,6 @@
             <div style="color:gray; font-size:14px;">${row[2] || ''}</div>
           </div>
         `}).join('');
-      } else {
-        weatherContainer.innerHTML = '<div class="loading">無法載入天氣，請檢查試算表。</div>';
       }
 
       // 3. 載入清單
@@ -144,37 +129,37 @@
       const checklistContainer = document.getElementById('checklist-container');
       if (checklistData.length > 0) {
         checklistContainer.innerHTML = checklistData.map((row, index) => {
-          if (row[0] === '項目') return ''; // 跳過標題列
+          if (row[0] === '項目') return '';
           return `
           <div class="checklist-item">
             <input type="checkbox" id="item-${index}">
             <label for="item-${index}">${row[0]}</label>
           </div>
         `}).join('');
-      } else {
-        checklistContainer.innerHTML = '<div class="loading">無法載入清單，請檢查試算表。</div>';
       }
 
-      // 4. 載入地圖
+      // 4. 載入地圖 (✨ 自動生成地圖的魔法在這裡)
       const mapData = await fetchSheet('地圖');
       const mapContainer = document.getElementById('map-container');
       if (mapData.length > 0) {
         mapContainer.innerHTML = mapData.map(row => {
-          if (row[0] === '標題') return ''; // 跳過標題列
+          if (row[0] === '標題') return ''; 
+          
+          // 抓取 A 欄的地點名稱，自動組裝成 Google Maps 搜尋用的安全嵌入網址
+          const placeName = encodeURIComponent(row[0]);
+          const autoMapUrl = `https://maps.google.com/maps?q=${placeName}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+          
           return `
           <div class="card">
             <p style="font-weight:bold; margin-bottom:10px;">${row[0]}</p>
             <div class="map-container">
-              <iframe src="${row[1]}" loading="lazy" allowfullscreen></iframe>
+              <iframe src="${autoMapUrl}" loading="lazy" allowfullscreen></iframe>
             </div>
           </div>
         `}).join('');
-      } else {
-        mapContainer.innerHTML = '<div class="loading">無法載入地圖，請檢查試算表。</div>';
       }
     }
 
-    // 切換頁籤
     function switchTab(tabId, btn) {
       document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -183,7 +168,6 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 網頁載入時啟動
     loadAllData();
   </script>
 </body>
