@@ -7,4 +7,184 @@
   <style>
     /* 全局與重置設定 */
     :root { --primary-color: #0284c7; --bg-color: #f8fafc; --card-bg: #ffffff; --text-main: #334155; --text-muted: #64748b; --border-color: #e2e8f0; }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 80px; }
+    header { background-color: var(--primary-color); color: white; padding: 24px 20px; text-align: center; border-radius: 0 0 20px 20px; }
+    header h1 { font-size: 24px; margin-bottom: 8px; }
+    nav { position: fixed; bottom: 0; width: 100%; background: var(--card-bg); display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000; }
+    .nav-btn { background: none; border: none; font-size: 14px; color: var(--text-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: bold; padding: 8px; }
+    .nav-btn.active { color: var(--primary-color); }
+    .section { display: none; padding: 20px; max-width: 600px; margin: 0 auto; animation: fadeIn 0.3s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    h2 { font-size: 20px; margin-bottom: 16px; border-left: 4px solid var(--primary-color); padding-left: 10px; }
+    
+    .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border-color); }
+    .day-title { font-size: 16px; font-weight: bold; color: var(--primary-color); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+    .event { display: flex; margin-bottom: 12px; }
+    .event:last-child { margin-bottom: 0; }
+    .time { min-width: 60px; font-size: 14px; color: var(--text-muted); font-weight: bold; }
+    .desc { flex: 1; font-size: 15px; }
+    .checklist-item { display: flex; align-items: center; background: var(--card-bg); padding: 14px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color); }
+    .checklist-item input { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--primary-color); }
+    .weather-temp { font-size: 24px; color: var(--primary-color); font-weight: bold; margin: 8px 0; }
+    .map-container { width: 100%; border-radius: 12px; overflow: hidden; }
+    iframe { width: 100%; height: 350px; border: none; }
+    .loading { text-align: center; color: var(--text-muted); padding: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>麗星郵輪 🛳️</h1>
+    <p>4/26 (三) - 4/30 (日) 五天四夜</p>
+  </header>
+
+  <main>
+    <section id="itinerary" class="section active">
+      <h2>每日行程</h2>
+      <div id="timeline-container"><div class="loading">載入最新行程中...</div></div>
+    </section>
+
+    <section id="weather" class="section">
+      <h2>天氣預報</h2>
+      <div id="weather-container"><div class="loading">載入天氣資料中...</div></div>
+    </section>
+
+    <section id="checklist" class="section">
+      <h2>行李與代辦清單</h2>
+      <div id="checklist-container"><div class="loading">載入清單中...</div></div>
+    </section>
+
+    <section id="map" class="section">
+      <h2>地圖導覽</h2>
+      <div id="map-container"><div class="loading">載入地圖中...</div></div>
+    </section>
+  </main>
+
+  <nav>
+    <button class="nav-btn active" onclick="switchTab('itinerary', this)">📅 行程</button>
+    <button class="nav-btn" onclick="switchTab('weather', this)">🌤️ 天氣</button>
+    <button class="nav-btn" onclick="switchTab('checklist', this)">✅ 清單</button>
+    <button class="nav-btn" onclick="switchTab('map', this)">🗺️ 地圖</button>
+  </nav>
+
+  <script>
+    // ==========================================
+    // 💡 你的 Google 試算表 ID 已經設定好了！
+    // ==========================================
+    const SHEET_ID = '1SoJwHoJQz4pkMRCiwGSRc46bNgkYM-12kfTv4kVJZlg'; 
+    
+    // 透過 Google Visualization API 抓取試算表資料
+    async function fetchSheet(sheetName) {
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        // 移除 Google API 回傳的多餘字串，轉成純 JSON
+        const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+        const data = JSON.parse(jsonStr);
+        return data.table.rows.map(row => row.c.map(cell => cell ? cell.v : ''));
+      } catch (error) {
+        console.error(`讀取 ${sheetName} 失敗:`, error);
+        return [];
+      }
+    }
+
+    // 初始化所有資料
+    async function loadAllData() {
+      // 1. 載入行程
+      const itineraryData = await fetchSheet('行程表');
+      const timeline = document.getElementById('timeline-container');
+      if (itineraryData.length > 0) {
+        timeline.innerHTML = '';
+        let currentDay = '';
+        let dayHtml = '';
+        
+        itineraryData.forEach(row => {
+          const day = row[0];
+          const time = row[1] || '';
+          const desc = row[2] || '';
+          
+          // 跳過標題列 (如果有的話)
+          if (day === '天數') return;
+
+          if(day && day !== currentDay) {
+            if(dayHtml !== '') dayHtml += `</div>`; // 關閉上一個卡片
+            currentDay = day;
+            dayHtml += `<div class="card"><div class="day-title">${day}</div>`;
+          }
+          dayHtml += `<div class="event"><div class="time">${time}</div><div class="desc">${desc}</div></div>`;
+        });
+        if(dayHtml !== '') dayHtml += `</div>`;
+        timeline.innerHTML = dayHtml || '<div class="loading">目前沒有行程資料</div>';
+      } else {
+        timeline.innerHTML = '<div class="loading">無法載入行程，請檢查試算表權限或名稱是否正確。</div>';
+      }
+
+      // 2. 載入天氣
+      const weatherData = await fetchSheet('天氣');
+      const weatherContainer = document.getElementById('weather-container');
+      if (weatherData.length > 0) {
+        weatherContainer.innerHTML = weatherData.map(row => {
+          if (row[0] === '日期') return ''; // 跳過標題列
+          return `
+          <div class="card" style="text-align:center;">
+            <div style="font-weight:bold;">${row[0]}</div>
+            <div class="weather-temp">${row[1]}</div>
+            <div style="color:gray; font-size:14px;">${row[2] || ''}</div>
+          </div>
+        `}).join('');
+      } else {
+        weatherContainer.innerHTML = '<div class="loading">無法載入天氣，請檢查試算表。</div>';
+      }
+
+      // 3. 載入清單
+      const checklistData = await fetchSheet('代辦清單');
+      const checklistContainer = document.getElementById('checklist-container');
+      if (checklistData.length > 0) {
+        checklistContainer.innerHTML = checklistData.map((row, index) => {
+          if (row[0] === '項目') return ''; // 跳過標題列
+          return `
+          <div class="checklist-item">
+            <input type="checkbox" id="item-${index}">
+            <label for="item-${index}">${row[0]}</label>
+          </div>
+        `}).join('');
+      } else {
+        checklistContainer.innerHTML = '<div class="loading">無法載入清單，請檢查試算表。</div>';
+      }
+
+      // 4. 載入地圖
+      const mapData = await fetchSheet('地圖');
+      const mapContainer = document.getElementById('map-container');
+      if (mapData.length > 0) {
+        mapContainer.innerHTML = mapData.map(row => {
+          if (row[0] === '標題') return ''; // 跳過標題列
+          return `
+          <div class="card">
+            <p style="font-weight:bold; margin-bottom:10px;">${row[0]}</p>
+            <div class="map-container">
+              <iframe src="${row[1]}" loading="lazy" allowfullscreen></iframe>
+            </div>
+          </div>
+        `}).join('');
+      } else {
+        mapContainer.innerHTML = '<div class="loading">無法載入地圖，請檢查試算表。</div>';
+      }
+    }
+
+    // 切換頁籤
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 網頁載入時啟動
+    loadAllData();
+  </script>
+</body>
+</html>
