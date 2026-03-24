@@ -40,9 +40,21 @@
   </header>
 
   <main>
-    <section id="itinerary" class="section active">
-      <h2>每日行程</h2>
-      <div id="timeline-container"><div class="loading">載入最新行程中...</div></div>
+        <section id="weather" class="section">
+      <h2>天氣預報 (即時連線)</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px; text-align: center;">
+        💡 提示：氣象系統僅提供未來 7 天預報，出發前一週查看最準確喔！
+      </p>
+      
+      <a class="weatherwidget-io" href="https://forecast7.com/zh-tw/25d13121d74/keelung-city/" data-label_1="基隆市" data-label_2="登船港口" data-theme="pure" >基隆市 登船港口</a>
+      
+      <a class="weatherwidget-io" href="https://forecast7.com/zh-tw/24d81125d28/miyakojima/" data-label_1="宮古島" data-label_2="日本" data-theme="pure" >宮古島 日本</a>
+      
+      <a class="weatherwidget-io" href="https://forecast7.com/zh-tw/26d21127d68/naha/" data-label_1="那霸" data-label_2="日本" data-theme="pure" >那霸 日本</a>
+      
+      <script>
+      !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+      </script>
     </section>
 
     <section id="weather" class="section">
