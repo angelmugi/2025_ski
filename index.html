@@ -22,7 +22,7 @@
     .day-title { font-size: 16px; font-weight: bold; color: var(--primary-color); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
     .event { display: flex; margin-bottom: 12px; }
     .event:last-child { margin-bottom: 0; }
-    .time { min-width: 60px; font-size: 14px; color: var(--text-muted); font-weight: bold; }
+    .time { min-width: 60px; font-size: 14px; color: var(--text-muted); font-weight: bold; padding-right: 10px; }
     .desc { flex: 1; font-size: 15px; }
     .checklist-item { display: flex; align-items: center; background: var(--card-bg); padding: 14px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color); }
     .checklist-item input { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--primary-color); }
@@ -78,7 +78,8 @@
         const text = await res.text();
         const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
         const data = JSON.parse(jsonStr);
-        return data.table.rows.map(row => row.c.map(cell => cell ? cell.v : ''));
+        // ✨ 魔法修改在這裡：優先抓取 cell.f（格式化後的文字，如 14:00），如果沒有再抓 cell.v（原始值）
+        return data.table.rows.map(row => row.c.map(cell => cell ? (cell.f ? cell.f : cell.v) : ''));
       } catch (error) {
         console.error(`讀取 ${sheetName} 失敗:`, error);
         return [];
@@ -138,14 +139,12 @@
         `}).join('');
       }
 
-      // 4. 載入地圖 (✨ 自動生成地圖的魔法在這裡)
+      // 4. 載入地圖
       const mapData = await fetchSheet('地圖');
       const mapContainer = document.getElementById('map-container');
       if (mapData.length > 0) {
         mapContainer.innerHTML = mapData.map(row => {
           if (row[0] === '標題') return ''; 
-          
-          // 抓取 A 欄的地點名稱，自動組裝成 Google Maps 搜尋用的安全嵌入網址
           const placeName = encodeURIComponent(row[0]);
           const autoMapUrl = `https://maps.google.com/maps?q=${placeName}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
           
