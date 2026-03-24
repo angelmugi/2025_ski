@@ -26,10 +26,12 @@
     .desc { flex: 1; font-size: 15px; }
     .checklist-item { display: flex; align-items: center; background: var(--card-bg); padding: 14px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color); }
     .checklist-item input { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--primary-color); }
-    .weather-temp { font-size: 24px; color: var(--primary-color); font-weight: bold; margin: 8px 0; }
     .map-container { width: 100%; border-radius: 12px; overflow: hidden; background: #e2e8f0; }
     iframe { width: 100%; height: 350px; border: none; display: block; }
     .loading { text-align: center; color: var(--text-muted); padding: 20px; font-size: 14px; }
+    
+    /* 調整天氣小工具的間距 */
+    .weatherwidget-io { margin-bottom: 15px; display: block; }
   </style>
 </head>
 <body>
@@ -40,10 +42,15 @@
   </header>
 
   <main>
-        <section id="weather" class="section">
+    <section id="itinerary" class="section active">
+      <h2>每日行程</h2>
+      <div id="timeline-container"><div class="loading">載入最新行程中...</div></div>
+    </section>
+
+    <section id="weather" class="section">
       <h2>天氣預報 (即時連線)</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px; text-align: center;">
-        💡 提示：氣象系統僅提供未來 7 天預報，出發前一週查看最準確喔！
+        💡 提示：氣象系統僅提供未來 7-14 天預報，出發前一週查看最準確喔！
       </p>
       
       <a class="weatherwidget-io" href="https://forecast7.com/zh-tw/25d13121d74/keelung-city/" data-label_1="基隆市" data-label_2="登船港口" data-theme="pure" >基隆市 登船港口</a>
@@ -55,11 +62,6 @@
       <script>
       !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
       </script>
-    </section>
-
-    <section id="weather" class="section">
-      <h2>天氣預報</h2>
-      <div id="weather-container"><div class="loading">載入天氣資料中...</div></div>
     </section>
 
     <section id="checklist" class="section">
@@ -90,7 +92,6 @@
         const text = await res.text();
         const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
         const data = JSON.parse(jsonStr);
-        // ✨ 魔法修改在這裡：優先抓取 cell.f（格式化後的文字，如 14:00），如果沒有再抓 cell.v（原始值）
         return data.table.rows.map(row => row.c.map(cell => cell ? (cell.f ? cell.f : cell.v) : ''));
       } catch (error) {
         console.error(`讀取 ${sheetName} 失敗:`, error);
@@ -122,22 +123,9 @@
         timeline.innerHTML = dayHtml || '<div class="loading">目前沒有行程資料</div>';
       }
 
-      // 2. 載入天氣
-      const weatherData = await fetchSheet('天氣');
-      const weatherContainer = document.getElementById('weather-container');
-      if (weatherData.length > 0) {
-        weatherContainer.innerHTML = weatherData.map(row => {
-          if (row[0] === '日期') return '';
-          return `
-          <div class="card" style="text-align:center;">
-            <div style="font-weight:bold;">${row[0]}</div>
-            <div class="weather-temp">${row[1]}</div>
-            <div style="color:gray; font-size:14px;">${row[2] || ''}</div>
-          </div>
-        `}).join('');
-      }
+      // (注意：這裡已經把抓取舊版天氣的程式碼移除了，所以不會再卡住了！)
 
-      // 3. 載入清單
+      // 2. 載入清單
       const checklistData = await fetchSheet('代辦清單');
       const checklistContainer = document.getElementById('checklist-container');
       if (checklistData.length > 0) {
@@ -151,14 +139,15 @@
         `}).join('');
       }
 
-      // 4. 載入地圖
+      // 3. 載入地圖
       const mapData = await fetchSheet('地圖');
       const mapContainer = document.getElementById('map-container');
       if (mapData.length > 0) {
         mapContainer.innerHTML = mapData.map(row => {
           if (row[0] === '標題') return ''; 
           const placeName = encodeURIComponent(row[0]);
-          const autoMapUrl = `https://maps.google.com/maps?q=${placeName}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+          // 使用標準的 Google Maps Embed 網址確保安全性
+          const autoMapUrl = `https://maps.google.com/maps?q=${placeName}&t=&z=15&ie=UTF8&iwloc=&output=embed`; 
           
           return `
           <div class="card">
