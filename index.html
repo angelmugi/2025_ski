@@ -19,7 +19,7 @@
     h2 { font-size: 20px; margin-bottom: 16px; border-left: 4px solid var(--primary-color); padding-left: 10px; }
     
     .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border-color); }
-    .day-title { font-size: 16px; font-weight: bold; color: var(--primary-color); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+    .day-title { font-size: 16px; font-weight: bold; color: var(--primary-color); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
     .event { display: flex; margin-bottom: 12px; }
     .event:last-child { margin-bottom: 0; }
     .time { min-width: 60px; font-size: 14px; color: var(--text-muted); font-weight: bold; padding-right: 10px; }
@@ -29,8 +29,6 @@
     .map-container { width: 100%; border-radius: 12px; overflow: hidden; background: #e2e8f0; }
     iframe { width: 100%; height: 350px; border: none; display: block; }
     .loading { text-align: center; color: var(--text-muted); padding: 20px; font-size: 14px; }
-    
-    /* 調整天氣小工具的間距 */
     .weatherwidget-io { margin-bottom: 15px; display: block; }
   </style>
 </head>
@@ -50,15 +48,11 @@
     <section id="weather" class="section">
       <h2>天氣預報 (即時連線)</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px; text-align: center;">
-        💡 提示：氣象系統僅提供未來 7-14 天預報，出發前一週查看最準確喔！
+        💡 提示：此頁面提供各地即時與未來一週預報
       </p>
-      
       <a class="weatherwidget-io" href="https://forecast7.com/zh-tw/25d13121d74/keelung-city/" data-label_1="基隆市" data-label_2="登船港口" data-theme="pure" >基隆市 登船港口</a>
-      
       <a class="weatherwidget-io" href="https://forecast7.com/zh-tw/24d81125d28/miyakojima/" data-label_1="宮古島" data-label_2="日本" data-theme="pure" >宮古島 日本</a>
-      
       <a class="weatherwidget-io" href="https://forecast7.com/zh-tw/26d21127d68/naha/" data-label_1="那霸" data-label_2="日本" data-theme="pure" >那霸 日本</a>
-      
       <script>
       !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
       </script>
@@ -85,6 +79,34 @@
   <script>
     const SHEET_ID = '1SoJwHoJQz4pkMRCiwGSRc46bNgkYM-12kfTv4kVJZlg'; 
     
+    // ✨ 秘密武器：去抓當地真實的即時天氣
+    async function getLiveWeather(dayText) {
+      let lat, lon;
+      // 根據行程標題判斷目前的座標
+      if (dayText.includes('啟航') || dayText.includes('基隆')) { lat = 25.1276; lon = 121.7392; }
+      else if (dayText.includes('宮古島')) { lat = 24.8055; lon = 125.2811; }
+      else if (dayText.includes('那霸')) { lat = 26.2124; lon = 127.6809; }
+      else return null; // 海上抓不到位置
+
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const temp = Math.round(data.current_weather.temperature);
+        const code = data.current_weather.weathercode;
+        
+        // 將無聊的天氣代碼換成可愛的 Emoji
+        let icon = '🌤️';
+        if(code === 0) icon = '☀️';
+        else if(code <= 3) icon = '⛅';
+        else if(code <= 48) icon = '☁️';
+        else if(code <= 67) icon = '🌧️';
+        else icon = '☔';
+        
+        return `⚡即時 ${icon} ${temp}°C`;
+      } catch (e) { return null; }
+    }
+
     async function fetchSheet(sheetName) {
       const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
       try {
@@ -94,12 +116,15 @@
         const data = JSON.parse(jsonStr);
         return data.table.rows.map(row => row.c.map(cell => cell ? (cell.f ? cell.f : cell.v) : ''));
       } catch (error) {
-        console.error(`讀取 ${sheetName} 失敗:`, error);
         return [];
       }
     }
 
     async function loadAllData() {
+      // 取得你手機上今天的日期 (格式轉換為 "月/日"，例如 "4/26")
+      const today = new Date();
+      const todayStr = (today.getMonth() + 1) + '/' + today.getDate();
+
       // 1. 載入行程
       const itineraryData = await fetchSheet('行程表');
       const timeline = document.getElementById('timeline-container');
@@ -107,23 +132,43 @@
         timeline.innerHTML = '';
         let currentDay = '';
         let dayHtml = '';
-        itineraryData.forEach(row => {
+        
+        // 因為要在迴圈裡面呼叫 API，所以改用 for...of
+        for (const row of itineraryData) {
           const day = row[0];
           const time = row[1] || '';
           const desc = row[2] || '';
-          if (day === '天數') return;
+          let displayWeather = row[3] || ''; // 預設使用你試算表 D 欄打的字
+          
+          if (day === '天數') continue;
+          
           if(day && day !== currentDay) {
             if(dayHtml !== '') dayHtml += `</div>`; 
             currentDay = day;
-            dayHtml += `<div class="card"><div class="day-title">${day}</div>`;
+            
+            // ✨ 核心魔法：如果「行程標題」包含了「今天的日期」，就強制攔截！
+            if (day.includes(todayStr)) {
+              const liveWeather = await getLiveWeather(day);
+              if (liveWeather) {
+                // 用顯眼的紅色標示這是當天自動抓取的即時資料
+                displayWeather = `<span style="color: #ef4444; font-weight: bold;">${liveWeather}</span>`; 
+              }
+            } else if (displayWeather) {
+              // 如果不是今天，就乖乖顯示試算表裡的灰色備用天氣
+              displayWeather = `<span style="font-size: 13px; font-weight: normal; color: #64748b;">${displayWeather}</span>`;
+            }
+
+            dayHtml += `<div class="card">
+                          <div class="day-title">
+                            <span>${day}</span>
+                            ${displayWeather}
+                          </div>`;
           }
           dayHtml += `<div class="event"><div class="time">${time}</div><div class="desc">${desc}</div></div>`;
-        });
+        }
         if(dayHtml !== '') dayHtml += `</div>`;
         timeline.innerHTML = dayHtml || '<div class="loading">目前沒有行程資料</div>';
       }
-
-      // (注意：這裡已經把抓取舊版天氣的程式碼移除了，所以不會再卡住了！)
 
       // 2. 載入清單
       const checklistData = await fetchSheet('代辦清單');
@@ -131,12 +176,8 @@
       if (checklistData.length > 0) {
         checklistContainer.innerHTML = checklistData.map((row, index) => {
           if (row[0] === '項目') return '';
-          return `
-          <div class="checklist-item">
-            <input type="checkbox" id="item-${index}">
-            <label for="item-${index}">${row[0]}</label>
-          </div>
-        `}).join('');
+          return `<div class="checklist-item"><input type="checkbox" id="item-${index}"><label for="item-${index}">${row[0]}</label></div>`;
+        }).join('');
       }
 
       // 3. 載入地圖
@@ -146,17 +187,9 @@
         mapContainer.innerHTML = mapData.map(row => {
           if (row[0] === '標題') return ''; 
           const placeName = encodeURIComponent(row[0]);
-          // 使用標準的 Google Maps Embed 網址確保安全性
           const autoMapUrl = `https://maps.google.com/maps?q=${placeName}&t=&z=15&ie=UTF8&iwloc=&output=embed`; 
-          
-          return `
-          <div class="card">
-            <p style="font-weight:bold; margin-bottom:10px;">${row[0]}</p>
-            <div class="map-container">
-              <iframe src="${autoMapUrl}" loading="lazy" allowfullscreen></iframe>
-            </div>
-          </div>
-        `}).join('');
+          return `<div class="card"><p style="font-weight:bold; margin-bottom:10px;">${row[0]}</p><div class="map-container"><iframe src="${autoMapUrl}" loading="lazy" allowfullscreen></iframe></div></div>`;
+        }).join('');
       }
     }
 
